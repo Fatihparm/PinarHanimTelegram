@@ -8,6 +8,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+EXPOSE 8080
+
 COPY .env .env
 
 CMD ["python", "bot.py"]
