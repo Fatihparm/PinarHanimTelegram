@@ -3,3 +3,5 @@
 
 # Ignore Python bytecode cache
 __pycache__/
+
+.db

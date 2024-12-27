@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    build:
+      context: .  # Dockerfile'ın bulunduğu dizin
+    container_name: telegram-bot-container
+    image: telegram-bot:latest
+    restart: always  # Konteynırın otomatik yeniden başlatılması
+    volumes:
+      - ./logs:/app/logs  # Opsiyonel: Logları yerel bir dizine bağlamak için
+    environment:
+      - TOKEN=${TOKEN}  # Bot token'ı için environment variable
+    command: python bot.py  # Çalıştırılacak komut
