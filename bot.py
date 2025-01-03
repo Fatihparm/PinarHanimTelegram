@@ -34,14 +34,14 @@ async def set_daily_time(update: Update, context: CallbackContext):
     try:
         args = context.args
         if len(args) != 2:
-            await update.message.reply_text("Lütfen saati ve dakikayı şu formatta giriniz: /settime 9 0")
+            await update.message.reply_text("Lütfen saati ve dakikayı şu formatta giriniz: /set 9 0")
             return
 
         hour = int(args[0])
         minute = int(args[1])
 
         if not (0 <= hour < 24) or not (0 <= minute < 60):
-            await update.message.reply_text("Geçerli bir saat ve dakika girin! Örn: /settime 9 0")
+            await update.message.reply_text("Geçerli bir saat ve dakika girin! Örn: /set 9 0")
             return
         telegramId = update.effective_user.id
         kayitli_kullanicilar = model.check_all()
@@ -55,9 +55,9 @@ async def set_daily_time(update: Update, context: CallbackContext):
                 callback_send_sign_comment(context, hour - 3, minute, telegramId)
                 await update.message.reply_text(f"Burç yorumları her gün {hour:02}:{minute:02} saatine ayarlandı!")
                 return
-        await update.message.reply_text("Önce bir burç aboneliği oluşturun! Örn: /abonelik <burç>")
+        await update.message.reply_text("Önce bir burç aboneliği oluşturun! Örn: /abonelik kova")
     except ValueError:
-        await update.message.reply_text("Geçerli bir saat ve dakika girin! Örn: /settime 9 0")
+        await update.message.reply_text("Geçerli bir saat ve dakika girin! Örn: /set 9 0")
 
 def restart(context: CallbackContext):
     logger.info("Bot is restarting...")
