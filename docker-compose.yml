@@ -5,7 +5,6 @@ services:
     build:
       context: .  # Dockerfile'ın bulunduğu dizin
     container_name: telegram-bot-container
-    image: telegram-bot:latest
     restart: always  # Konteynırın otomatik yeniden başlatılması
     volumes:
       - ./logs:/app/logs  # Opsiyonel: Logları yerel bir dizine bağlamak için
