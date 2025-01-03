@@ -25,9 +25,9 @@ scrape = Scrape()
 model.create_tables()
 
 horoscope_signs = [
-        "balik", "kova", "oglak", "yay", "akrep", "terazi",
-        "basak", "aslan", "yengec", "ikizler", "boga", "koc"
-    ]
+    "balik", "kova", "oglak", "yay", "akrep", "terazi",
+    "basak", "aslan", "yengec", "ikizler", "boga", "koc"
+]
 
 async def set_daily_time(update: Update, context: CallbackContext):
     telegramId = update.effective_user.id
@@ -43,19 +43,24 @@ async def set_daily_time(update: Update, context: CallbackContext):
         if not (0 <= hour < 24) or not (0 <= minute < 60):
             await update.message.reply_text("Geçerli bir saat ve dakika girin! Örn: /set 9 0")
             return
-        telegramId = update.effective_user.id
+        
+        # Veritabanındaki kullanıcıları kontrol et
         kayitli_kullanicilar = model.check_all()
         sub_ids = [user[0] for user in kayitli_kullanicilar]
-
-        print(sub_ids)
-        print(telegramId)
-
+        # Kullanıcının veritabanında olup olmadığını kontrol et
+        found_user = False
         for id in sub_ids:
-            if int(id) == int(telegramId):
+            if str(id) == str(telegramId):
+                # Kullanıcıyı bulduk, saati ayarla
                 callback_send_sign_comment(context, hour - 3, minute, telegramId)
                 await update.message.reply_text(f"Burç yorumları her gün {hour:02}:{minute:02} saatine ayarlandı!")
-                return
-        await update.message.reply_text("Önce bir burç aboneliği oluşturun! Örn: /abonelik kova")
+                found_user = True
+                break
+        
+        if not found_user:
+            # Eğer kullanıcı abonelik yapmamışsa
+            await update.message.reply_text("Önce bir burç aboneliği oluşturun! Örn: /abonelik kova")
+
     except ValueError:
         await update.message.reply_text("Geçerli bir saat ve dakika girin! Örn: /set 9 0")
 
@@ -81,9 +86,9 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = (
         "Günlük burç yorumları ve tarot falı hakkında bilgi almak için aşağıdaki komutları kullanabilirsiniz:\n\n"
         "/tarot: Rastgele bir tarot kartı çeker.\n\n"
-        "/burc <burç>: Belirtilen burcun günlük yorumunu gösterir. (Örnek: /burc kova)"
-        "/abonelik <burç>: Günlük burç yorumlarını almak için abone olun. (Örnek: /abonelik kova)"
-        "/abonelikiptal: Aboneliği iptal eder."
+        "/burc <burç>: Belirtilen burcun günlük yorumunu gösterir. (Örnek: /burc kova) \n"
+        "/abonelik <burç>: Günlük burç yorumlarını almak için abone olun. (Örnek: /abonelik kova) \n"
+        "/abonelikiptal: Aboneliği iptal eder.\n"
         "/set <saat> <dakika>: Günlük burç yorumlarının gönderileceği saati ayarlar. (Örnek: /set 9 0)"
     )
     await update.message.reply_text(text)
@@ -138,7 +143,6 @@ async def abonelikiptal(update:Update, context:ContextTypes.DEFAULT_TYPE):
     info = update.message
     messages_to_add(info)
     logger.info(f"/abonelikiptal komutu tamamlandı. Kullanıcı: {user.first_name} ({user.id})")
-
 
 async def tarot(update: Update, context: ContextTypes.DEFAULT_TYPE):
     info = update.message
@@ -195,28 +199,40 @@ async def burc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def send_sign_comment(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
-    telegramId = job.data.get("telegramId", "Unknown")  # Kullanıcı ID'si context'ten alınır
+    telegramId = job.data.get("telegramId", "Unknown")
     logger.info(f"Running job for user {telegramId}")
 
     kayitli_kullanicilar = model.check_all()
     signs = model.get_zodiac_signs()
-
     try:
-        user_data = next((user for user in kayitli_kullanicilar if user[0] == telegramId), None)
-        if not user_data:
-            logger.info(f"User {telegramId} not found in database.")
-            return
-
-        user_sign = user_data[3]
-        for sign in signs:
-            if sign.name == user_sign:
-                embed = f"Ayın {sign.date}. günü için {sign.name} burcu günlük yorumu:\n\n{sign.description}\n\n"
-                if sign.image:
-                    await context.bot.send_photo(chat_id=telegramId, photo=sign.image, caption=embed)
-                else:
-                    await context.bot.send_message(chat_id=telegramId, text=embed)
+        # Kullanıcıyı veritabanında kontrol et
+        user_ids = [user[0] for user in kayitli_kullanicilar]
+        for user_id in user_ids:
+            if str(user_id) == str(telegramId):
+                user_data = model.check_person(telegramId)
+                user_info = {
+                    "telegram_id": user_data[0],
+                    "first_name": user_data[1],
+                    "last_name": user_data[2],
+                    "zodiac_sign": user_data[3]
+                }
+                user_sign = user_info["zodiac_sign"]  # Kullanıcının burç bilgisi
+                for sign in signs:
+                    if sign.name == user_sign:
+                        embed = f"Ayın {sign.date}. günü için {sign.name} burcu günlük yorumu:\n\n{sign.description}\n\n"
+                        if sign.image:
+                            # Özel mesaj olarak gönder
+                            await context.bot.send_photo(chat_id=telegramId, photo=sign.image, caption=embed)
+                        else:
+                            # Özel mesaj olarak sadece metin gönder
+                            await context.bot.send_message(chat_id=telegramId, text=embed)
+    except ValueError as e:
+        logger.error(f"ValueError occurred while sending zodiac sign comments for user {telegramId}: {e}")
+    except TypeError as e:
+        logger.error(f"TypeError occurred while sending zodiac sign comments for user {telegramId}: {e}")
     except Exception as e:
-        logger.error(f"An error occurred while sending zodiac sign comments for user {telegramId}: {e}")
+        logger.error(f"An unexpected error occurred while sending zodiac sign comments for user {telegramId}: {e}")
+
 
 def messages_to_add(info):
     user = info.from_user
