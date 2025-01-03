@@ -255,7 +255,7 @@ def main():
     application.add_handler(CommandHandler("abonelikiptal", abonelikiptal))
     application.add_handler(CommandHandler("set", set_daily_time))  # Yeni komut eklendi
 
-    #▀restart(application)
+    restart(application)
     callback_restart(application)
     application.run_polling()
 
