@@ -87,11 +87,12 @@ class Model:
         ''', (chat_id,))
         return self.c.fetchone()
 
-    def fetch_all_users(self):
-        self.c.execute("SELECT * FROM Users")
-        rows = self.c.fetchall()
-        users = [User(row[1], row[2], row[3], row[4]) for row in rows]
-        return users
+    def check_all(self):
+        """Fetches all users"""
+        self.c.execute('''
+        SELECT * FROM subscriptions 
+        ''')
+        return self.c.fetchall()
 
     def get_zodiac_signs(self):
         self.c.execute("SELECT * FROM ZodiacSigns")
